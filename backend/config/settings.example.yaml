@@ -1,0 +1,147 @@
+# ── Local Market Analyzer — Settings (example) ──────────────────────────────────
+#
+# Copy this file to settings.yaml and edit to match your environment.
+#   cp settings.example.yaml settings.yaml
+#
+# settings.yaml is NOT committed to git — it contains personal config.
+# This example file IS committed so new contributors have a starting point.
+#
+# ⚠ DISCLAIMER: This software is for educational and research purposes only.
+# The signals, scores, and outputs produced by this tool are not financial
+# advice. Do not make any investment or trading decisions based on this software.
+#
+# Secret values belong in backend/.env only — never here:
+#   LLM_API_KEY=your-key
+#
+# Changes to watchlist entries are picked up within 1 minute (no restart).
+# Changes to the llm section take effect on the next analysis request.
+# ──────────────────────────────────────────────────────────────────────────────
+
+llm:
+  # provider: openai_compat  — for Ollama, vLLM, LM Studio, or any OpenAI-compatible server
+  # provider: llamacpp        — for a local llama.cpp HTTP server
+  provider: openai_compat
+  base_url: http://localhost:11434/v1   # Ollama default; adjust for your server
+  model: llama3                         # required for openai_compat; leave "" for llamacpp
+  temperature: 0.2
+  max_tokens: 2048
+  timeout: 120                          # seconds — increase for slow hardware
+
+# ── Watchlist ──────────────────────────────────────────────────────────────────
+#
+# Each entry is a named group that defines WHAT to scan, HOW OFTEN,
+# WHICH PROMPTS to run, and WHICH INDICATORS to use.
+#
+# Fields per entry:
+#   name             — display label shown in the UI
+#   enabled          — true/false to activate scheduled scanning
+#   symbols          — list of tickers (empty = nothing scanned automatically)
+#   interval_minutes — how often to run (5, 15, 30, 60, 240, 1440, ...)
+#   interval_seconds — optional; sets the interval in seconds instead of minutes.
+#                      Useful for fast testing or sub-minute day-trading scans.
+#                      When set, it overrides interval_minutes for that entry.
+#                      Example: interval_seconds: 10  → poll every 10 seconds
+#   include_llm      — whether to call the configured LLM for each symbol
+#   prompts          — list of {file, name} pairs; 'file' is a .yaml filename
+#                      in backend/config/ (without extension), 'name' is the
+#                      key inside that file under the 'prompts:' block.
+#   indicators       — technical analysis settings for this group
+#                      sma is always computed; rsi/macd/bb are opt-in
+# ──────────────────────────────────────────────────────────────────────────────
+
+watchlist:
+  - name: Tech Momentum
+    enabled: true
+    symbols:
+      - AAPL
+      - MSFT
+      - NVDA
+      - TSLA
+      - AMZN
+    interval_minutes: 60
+    include_llm: true
+    prompts:
+      - file: prompts
+        name: trading_analysis
+    indicators:
+      sma:
+        short_period: 20
+        long_period: 50
+      rsi:
+        enabled: true
+        period: 14
+        oversold: 30
+        overbought: 70
+      macd:
+        enabled: false
+        fast: 12
+        slow: 26
+        signal: 9
+      bb:
+        enabled: false
+        period: 20
+        std: 2
+
+  # ── Fast-scan example (sub-minute, for local testing / day-trading) ───────────
+  # interval_seconds overrides interval_minutes when present.
+  # The scheduler loop ticks every 5 s when any entry uses a sub-60s interval.
+  - name: Fast Test
+    enabled: false
+    symbols:
+      - AAPL
+    interval_seconds: 10     # ← poll every 10 s; remove this line to fall back to minutes
+    interval_minutes: 1      # fallback if interval_seconds is removed
+    include_llm: false
+    prompts:
+      - file: prompts
+        name: trading_analysis
+    indicators:
+      sma:
+        short_period: 20
+        long_period: 50
+      rsi:
+        enabled: false
+        period: 14
+        oversold: 30
+        overbought: 70
+      macd:
+        enabled: false
+        fast: 12
+        slow: 26
+        signal: 9
+      bb:
+        enabled: false
+        period: 20
+        std: 2
+
+  - name: Macro / ETFs
+    enabled: false
+    symbols:
+      - SPY
+      - QQQ
+      - GLD
+    interval_minutes: 1440
+    include_llm: true
+    prompts:
+      - file: prompts
+        name: trading_analysis
+      - file: prompts
+        name: sentiment_analysis
+    indicators:
+      sma:
+        short_period: 10
+        long_period: 20
+      rsi:
+        enabled: true
+        period: 14
+        oversold: 30
+        overbought: 70
+      macd:
+        enabled: true
+        fast: 12
+        slow: 26
+        signal: 9
+      bb:
+        enabled: false
+        period: 20
+        std: 2
