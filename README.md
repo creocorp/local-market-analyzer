@@ -14,6 +14,8 @@ To add a screenshot: create a docs/ folder, add the image, commit it,
 then replace the line above with the correct filename.
 -->
 
+![Local Market Analyzer screenshot](docs/dashboard1.png)
+
 ## Features
 
 - **Real-time symbol analysis** — fetches OHLCV data via yfinance, computes SMA, RSI, MACD, and Bollinger Bands
